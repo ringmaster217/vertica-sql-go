@@ -407,6 +407,19 @@ func min(a, b int) int {
 	return b
 }
 
+// isDriverOption returns whether an option is driver-specific. I.e. anything that returns false can be set as a session variable on the backend.
+func isDriverOption(optionName string) bool {
+	switch optionName {
+	case "use_prepared_statements":
+		return true
+	case "connection_load_balance":
+		return true
+	case "backup_server_node":
+		return true
+	}
+	return false
+}
+
 func (v *connection) handshake() error {
 
 	if v.connURL.User == nil {
@@ -424,6 +437,13 @@ func (v *connection) handshake() error {
 		dbName = v.connURL.Path[1:]
 	}
 
+	options := map[string]string{}
+	for k := range v.connURL.Query() {
+		if !isDriverOption(k) {
+			options[k] = v.connURL.Query().Get(k)
+		}
+	}
+
 	msg := &msgs.FEStartupMsg{
 		ProtocolVersion: protocolVersion,
 		DriverName:      driverName,
@@ -432,6 +452,7 @@ func (v *connection) handshake() error {
 		Database:        dbName,
 		SessionID:       v.sessionID,
 		ClientPID:       v.clientPID,
+		Options:         options,
 	}
 
 	if err := v.sendMessage(msg); err != nil {

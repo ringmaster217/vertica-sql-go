@@ -43,6 +43,7 @@ type FEStartupMsg struct {
 	Database        string
 	SessionID       string
 	ClientPID       int
+	Options         map[string]string
 }
 
 // Flatten docs
@@ -69,6 +70,11 @@ func (m *FEStartupMsg) Flatten() ([]byte, byte) {
 	buf.appendLabeledString("client_version", m.DriverVersion)
 	buf.appendLabeledString("client_label", m.SessionID)
 	buf.appendLabeledString("client_pid", fmt.Sprintf("%d", m.ClientPID))
+
+	for k, v := range m.Options {
+		buf.appendLabeledString(k, v)
+	}
+
 	buf.appendBytes([]byte{0})
 
 	return buf.bytes(), 0
